@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: api-gateway
+    env: python
+    buildCommand: pip install -r gateway/requirements.txt
+    startCommand: python gateway/main.py
+    envVars:
+      - key: IDENTITY_SERVICE_URL
+        fromService:
+          name: identity-service
+          type: web
+          property: host
+
+  - type: web
+    name: identity-service
+    env: python
+    buildCommand: pip install -r services/identity-service/requirements.txt
+    startCommand: uvicorn src.app:app --host 0.0.0.0 --port 10000
+    envVars:
+      - key: DATABASE_URL
+        value: postgresql://user:pass@host/db
+      - key: REDIS_URL
+        value: redis://red-xxxx:6379
+
+  - type: redis
+    name: shared-redis
+    ipAllowList: [] # Sadece iç servisler erişsin

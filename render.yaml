@@ -1,27 +1,30 @@
 services:
+  - type: redis
+    name: shared-redis
+    ipAllowList: []
+
   - type: web
-    name: api-gateway
+    name: gateway
     env: python
-    buildCommand: pip install -r gateway/requirements.txt
+    buildCommand: pip install -r requirements.txt
     startCommand: python gateway/main.py
     envVars:
       - key: IDENTITY_SERVICE_URL
-        fromService:
-          name: identity-service
-          type: web
-          property: host
+        fromService: { name: identity-service, type: web, property: host }
+      - key: RESERVATION_SERVICE_URL
+        fromService: { name: reservation-service, type: web, property: host }
 
   - type: web
     name: identity-service
     env: python
-    buildCommand: pip install -r services/identity-service/requirements.txt
-    startCommand: uvicorn src.app:app --host 0.0.0.0 --port 10000
-    envVars:
-      - key: DATABASE_URL
-        value: postgresql://user:pass@host/db
-      - key: REDIS_URL
-        value: redis://red-xxxx:6379
+    startCommand: uvicorn services.identity-service.src.app:app --host 0.0.0.0 --port 10000
 
-  - type: redis
-    name: shared-redis
-    ipAllowList: [] # Sadece iç servisler erişsin
+  - type: web
+    name: reservation-service
+    env: python
+    startCommand: uvicorn services.reservation-service.src.app:app --host 0.0.0.0 --port 10000
+
+  - type: worker # Finance Service arka planda çalışır
+    name: finance-worker
+    env: python
+    startCommand: python services/finance-service/src/worker.py

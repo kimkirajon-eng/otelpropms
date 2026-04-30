@@ -1,22 +1,33 @@
 import uvicorn
 from fastapi import FastAPI, Request
-import httpx # Asenkron HTTP istekleri için
+import httpx
 import os
 
-app = FastAPI()
+app = FastAPI(title="Hotel PMS Gateway")
 
-IDENTITY_URL = os.getenv("IDENTITY_SERVICE_URL", "http://localhost:8001")
+# Servis URL'leri Render ortam değişkenlerinden gelir
+SERVICES = {
+    "auth": os.getenv("IDENTITY_SERVICE_URL"),
+    "res": os.getenv("RESERVATION_SERVICE_URL"),
+    "hk": os.getenv("HK_SERVICE_URL"),
+    "pos": os.getenv("POS_SERVICE_URL")
+}
 
-@app.api_route("/auth/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
-async def proxy_identity(request: Request, path: str):
+@app.api_route("/{service}/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
+async def gateway_proxy(service: str, path: str, request: Request):
+    if service not in SERVICES:
+        return {"error": "Servis bulunamadı"}, 404
+    
+    target_url = f"{SERVICES[service]}/{path}"
+    
     async with httpx.AsyncClient() as client:
-        url = f"{IDENTITY_URL}/auth/{path}"
         content = await request.body()
         resp = await client.request(
             method=request.method,
-            url=url,
+            url=target_url,
             content=content,
-            headers=dict(request.headers)
+            headers=dict(request.headers),
+            params=dict(request.query_params)
         )
         return resp.json()
 

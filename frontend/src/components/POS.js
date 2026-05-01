@@ -18,3 +18,5 @@ const POS = () => {
     </div>
   );
 };
+
+export default POS;

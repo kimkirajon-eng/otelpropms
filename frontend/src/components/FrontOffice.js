@@ -2,47 +2,62 @@ import React from 'react';
 
 const FrontOffice = () => {
   const rooms = [
-    { id: 101, type: 'King Suite', status: 'Occupied', guest: 'Mert Demir', checkout: '20.10' },
-    { id: 102, type: 'Standard', status: 'Clean', guest: '-', checkout: '-' },
-    { id: 103, type: 'Standard', status: 'Dirty', guest: '-', checkout: '-' },
-    { id: 104, type: 'Deluxe', status: 'Reserved', guest: 'Ayşe Kaya', checkout: '21.10' },
+    { id: 101, type: 'Kral Dairesi', status: 'Dolu', guest: 'Mert Demir', price: '₺4.500' },
+    { id: 102, type: 'Standart', status: 'Temiz', guest: '-', price: '₺2.100' },
+    { id: 103, type: 'Standart', status: 'Kirli', guest: '-', price: '₺2.100' },
+    { id: 104, type: 'Deluxe', status: 'Rezerve', guest: 'Ayşe Kaya', price: '₺3.200' },
   ];
 
   return (
-    <div className="animate-in fade-in duration-500">
-      <div className="flex justify-between items-center mb-8">
-        <h2 className="text-3xl font-black text-slate-800 underline decoration-orange-500 decoration-4">Oda Planı (Rack)</h2>
-        <button className="bg-slate-900 text-white px-6 py-3 rounded-xl font-bold shadow-lg">+ Yeni Rezervasyon</button>
+    <div className="module-container">
+      <div className="module-header">
+        <h2>Oda Rack Planı</h2>
+        <button className="primary-btn">+ Yeni Kayıt</button>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      
+      <div className="room-grid">
         {rooms.map(room => (
-          <div key={room.id} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl transition-all group">
-            <div className="flex justify-between items-start mb-4">
-              <span className="text-4xl font-black text-slate-200 group-hover:text-orange-500 transition-colors">{room.id}</span>
-              <StatusBadge status={room.status} />
+          <div key={room.id} className="room-card">
+            <div className="room-top">
+              <span className="room-no">{room.id}</span>
+              <span className={`status-pill ${room.status.toLowerCase()}`}>{room.status}</span>
             </div>
-            <p className="text-sm font-bold text-slate-500 mb-1">{room.type}</p>
-            <p className="text-lg font-black text-slate-800">{room.guest}</p>
-            <div className="mt-4 pt-4 border-t flex justify-between text-[11px] font-bold text-slate-400">
-              <span>CHECK-OUT: {room.checkout}</span>
-              <button className="text-orange-500 hover:underline italic">İşlemler</button>
+            <div className="room-info">
+              <label>{room.type}</label>
+              <strong>{room.guest}</strong>
+            </div>
+            <div className="room-footer">
+              <span>{room.price}</span>
+              <button className="action-btn">İşlem</button>
             </div>
           </div>
         ))}
       </div>
+
+      <style>{`
+        .module-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .module-header h2 { font-size: 2rem; font-weight: 900; color: #1a1f36; }
+        .primary-btn { background: #1a1f36; color: white; border: none; padding: 12px 25px; border-radius: 12px; font-weight: 700; cursor: pointer; }
+        
+        .room-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+        .room-card { background: white; padding: 20px; border-radius: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #f0f2f5; transition: 0.3s; }
+        .room-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); }
+        
+        .room-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .room-no { font-size: 1.5rem; font-weight: 900; color: #cbd5e0; }
+        .status-pill { font-size: 0.6rem; font-weight: 900; padding: 4px 10px; border-radius: 8px; text-transform: uppercase; }
+        .status-pill.dolu { background: #ebf4ff; color: #3182ce; }
+        .status-pill.temiz { background: #f0fff4; color: #38a169; }
+        .status-pill.kirli { background: #fff5f5; color: #e53e3e; }
+        .status-pill.rezerve { background: #fffaf0; color: #dd6b20; }
+
+        .room-info label { display: block; font-size: 0.7rem; color: #a0aec0; font-weight: 700; margin-bottom: 2px; }
+        .room-info strong { font-size: 1rem; color: #2d3748; }
+        .room-footer { margin-top: 15px; pt: 15px; border-top: 1px solid #f7fafc; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; font-weight: 800; color: #4a5568; }
+        .action-btn { background: none; border: none; color: #ff4d00; font-weight: 800; cursor: pointer; }
+      `}</style>
     </div>
   );
-};
-
-const StatusBadge = ({ status }) => {
-  const colors = {
-    Occupied: 'bg-blue-100 text-blue-600',
-    Clean: 'bg-green-100 text-green-600',
-    Dirty: 'bg-red-100 text-red-600',
-    Reserved: 'bg-yellow-100 text-yellow-600'
-  };
-  return <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${colors[status]}`}>{status}</span>;
 };
 
 export default FrontOffice;

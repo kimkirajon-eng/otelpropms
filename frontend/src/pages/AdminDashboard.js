@@ -27,37 +27,42 @@ const AdminDashboard = ({ user, onLogout }) => {
 
         <div className="p-6 bg-slate-950">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center font-bold">{user.username[0].toUpperCase()}</div>
+            {/* HATA DÜZELTME: User kontrolü eklendi */}
+            <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center font-bold text-white shadow-lg">
+              {user?.username ? user.username[0].toUpperCase() : 'A'}
+            </div>
             <div>
-              <p className="text-sm font-bold">{user.username}</p>
-              <p className="text-xs text-slate-400">Yönetici</p>
+              <p className="text-sm font-bold">{user?.username || 'Yönetici'}</p>
+              <p className="text-xs text-slate-400">Genel Müdür</p>
             </div>
           </div>
-          <button onClick={onLogout} className="w-full py-2 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all text-sm font-semibold">Güvenli Çıkış</button>
+          <button onClick={onLogout} className="w-full py-2 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all text-sm font-semibold border border-red-500/20">Güvenli Çıkış</button>
         </div>
       </aside>
 
       {/* Ana İçerik */}
       <main className="flex-1 flex flex-col overflow-hidden">
         <header className="h-20 bg-white border-b flex items-center justify-between px-10 shadow-sm">
-          <div className="flex gap-8">
+          <div className="flex gap-12">
             <StatCard label="Dolu Oda" value={stats.occupied} color="text-blue-600" />
             <StatCard label="Kirli Oda" value={stats.dirty} color="text-red-500" />
             <StatCard label="Bekleyen Rez." value={stats.pendingRes} color="text-green-600" />
           </div>
-          <div className="flex items-center gap-4 text-slate-400">
-            <span className="animate-pulse flex items-center gap-2 text-green-500 text-sm font-medium">
-              <span className="w-2 h-2 bg-green-500 rounded-full"></span> Sistem Çevrimiçi
+          <div className="flex items-center gap-6">
+            <span className="animate-pulse flex items-center gap-2 text-green-500 text-[10px] font-bold uppercase tracking-widest bg-green-50 px-3 py-1 rounded-full border border-green-100">
+              <span className="w-2 h-2 bg-green-500 rounded-full"></span> Çevrimiçi
             </span>
-            <span className="text-2xl cursor-pointer">🔔</span>
+            <span className="text-xl cursor-pointer hover:scale-110 transition-transform">🔔</span>
           </div>
         </header>
 
-        <section className="flex-1 overflow-y-auto p-10 bg-slate-50">
-          {activeTab === 'frontoffice' && <FrontOffice />}
-          {activeTab === 'hk' && <Housekeeping />}
-          {activeTab === 'finance' && <Finance />}
-          {activeTab === 'pos' && <POS />}
+        <section className="flex-1 overflow-y-auto p-10 bg-slate-50/50">
+          <div className="max-w-7xl mx-auto">
+            {activeTab === 'frontoffice' && <FrontOffice />}
+            {activeTab === 'hk' && <Housekeeping />}
+            {activeTab === 'finance' && <Finance />}
+            {activeTab === 'pos' && <POS />}
+          </div>
         </section>
       </main>
     </div>
@@ -65,16 +70,16 @@ const AdminDashboard = ({ user, onLogout }) => {
 };
 
 const NavItem = ({ icon, label, active, onClick }) => (
-  <button onClick={onClick} className={`w-full flex items-center gap-4 p-4 rounded-xl transition-all font-medium ${active ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30' : 'hover:bg-slate-800 text-slate-400'}`}>
+  <button onClick={onClick} className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all font-semibold text-sm ${active ? 'bg-orange-500 text-white shadow-xl shadow-orange-500/40 translate-x-2' : 'hover:bg-slate-800 text-slate-400'}`}>
     <span className="text-xl">{icon}</span>
     {label}
   </button>
 );
 
 const StatCard = ({ label, value, color }) => (
-  <div>
-    <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">{label}</p>
-    <p className={`text-xl font-black ${color}`}>{value}</p>
+  <div className="flex flex-col">
+    <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-black mb-1">{label}</p>
+    <p className={`text-2xl font-black tracking-tight ${color}`}>{value}</p>
   </div>
 );
 

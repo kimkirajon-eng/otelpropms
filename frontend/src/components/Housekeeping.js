@@ -1,52 +1,63 @@
 import React from 'react';
 
 const Housekeeping = () => {
-  const rooms = [
-    { id: 101, staff: 'Ayşe K.', status: 'Temizleniyor', progress: 65, note: 'VIP Misafir Bekleniyor' },
-    { id: 102, staff: '-', status: 'Kirli', progress: 0, note: 'Check-out yapıldı' },
-    { id: 103, staff: 'Mehmet T.', status: 'Arızalı', progress: 0, note: 'Klima sorunu' },
-    { id: 104, staff: 'Fatma Y.', status: 'Denetleniyor', progress: 100, note: 'Hazır' },
+  const tasks = [
+    { id: 101, staff: 'Ayşe K.', status: 'Temizlikte', progress: 65 },
+    { id: 204, staff: 'Fatma Y.', status: 'Kirli', progress: 0 },
+    { id: 305, staff: 'Mehmet T.', status: 'Denetleniyor', progress: 100 },
   ];
 
   return (
-    <div className="p-4 space-y-6">
-      <div className="flex justify-between items-end">
-        <h2 className="text-4xl font-extrabold text-slate-900 tracking-tight">Kat Hizmetleri <span className="text-blue-600">.</span></h2>
-        <div className="flex gap-2">
-            <button className="bg-white border px-4 py-2 rounded-xl text-sm font-bold shadow-sm">Rapor Al</button>
-            <button className="bg-blue-600 text-white px-6 py-2 rounded-xl text-sm font-bold shadow-lg shadow-blue-200">🧹 Görev Ata</button>
-        </div>
+    <div className="module-container">
+      <div className="module-header">
+        <h2>Kat Hizmetleri Takibi</h2>
+        <div className="stats-mini">5 Kirli Oda Bekliyor</div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {rooms.map(room => (
-          <div key={room.id} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300">
-            <div className="flex justify-between items-start mb-4">
-              <span className="text-3xl font-black text-slate-800">{room.id}</span>
-              <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${room.status === 'Kirli' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>{room.status}</span>
-            </div>
-            <div className="space-y-4">
-                <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Görevli Personel</p>
-                    <p className="font-bold text-slate-700">{room.staff}</p>
-                </div>
-                <div className="bg-slate-50 p-3 rounded-2xl">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Durum Notu</p>
-                    <p className="text-xs text-slate-600 italic">"{room.note}"</p>
-                </div>
-                <div className="pt-2">
-                    <div className="flex justify-between text-[10px] font-bold mb-1">
-                        <span>İlerleme</span>
-                        <span>%{room.progress}</span>
-                    </div>
-                    <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                        <div className="h-full bg-blue-600 transition-all duration-500" style={{width: `${room.progress}%`}}></div>
-                    </div>
-                </div>
-            </div>
-          </div>
-        ))}
+      <div className="pms-table-card">
+        <table className="pms-table">
+          <thead>
+            <tr>
+              <th>ODA NO</th>
+              <th>GÖREVLİ</th>
+              <th>DURUM</th>
+              <th>İLERLEME</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tasks.map(task => (
+              <tr key={task.id}>
+                <td className="bold">{task.id}</td>
+                <td>{task.staff}</td>
+                <td><span className={`badge ${task.status.toLowerCase()}`}>{task.status}</span></td>
+                <td className="progress-cell">
+                  <div className="progress-bar"><div className="fill" style={{width: `${task.progress}%`}}></div></div>
+                  <span>%{task.progress}</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
+
+      <style>{`
+        .pms-table-card { background: white; border-radius: 30px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .pms-table { width: 100%; border-collapse: collapse; text-align: left; }
+        .pms-table th { background: #1a1f36; color: white; padding: 20px; font-size: 0.7rem; font-weight: 800; letter-spacing: 1px; }
+        .pms-table td { padding: 20px; border-bottom: 1px solid #f7fafc; font-size: 0.9rem; color: #4a5568; }
+        .pms-table tr:hover { background: #fcfcfd; }
+        .bold { font-weight: 900; color: #1a1f36 !important; font-size: 1.1rem !important; }
+        
+        .badge { padding: 5px 12px; border-radius: 10px; font-size: 0.65rem; font-weight: 800; }
+        .badge.temizlikte { background: #ebf8ff; color: #4299e1; }
+        .badge.kirli { background: #fff5f5; color: #f56565; }
+        .badge.denetleniyor { background: #f0fff4; color: #48bb78; }
+
+        .progress-cell { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 0.7rem; }
+        .progress-bar { flex: 1; background: #edf2f7; h-height: 8px; border-radius: 10px; height: 8px; overflow: hidden; }
+        .fill { background: #4299e1; height: 100%; transition: 0.5s; }
+        .stats-mini { background: #fff5f5; color: #e53e3e; padding: 8px 15px; border-radius: 12px; font-weight: 800; font-size: 0.8rem; }
+      `}</style>
     </div>
   );
 };

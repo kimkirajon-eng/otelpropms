@@ -11,7 +11,7 @@ const FrontOffice = () => {
       <h1 className="text-2xl font-bold mb-4">Ön Büro Kontrol Paneli</h1>
       <div className="grid grid-cols-4 gap-4">
         {rooms.map(room => (
-          <div className={`p-4 rounded shadow-lg ${room.status === 'Clean' ? 'bg-green-100' : 'bg-red-100'}`}>
+          <div key={room.id} className={`p-4 rounded shadow-lg ${room.status === 'Clean' ? 'bg-green-100' : 'bg-red-100'}`}>
             <h2 className="font-bold text-xl">Oda {room.id}</h2>
             <p>{room.type}</p>
             <p className="text-sm italic">{room.guest}</p>
@@ -22,3 +22,5 @@ const FrontOffice = () => {
     </div>
   );
 };
+
+export default FrontOffice; // <-- BU SATIR ÇOK ÖNEMLİ

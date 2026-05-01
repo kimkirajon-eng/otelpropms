@@ -20,3 +20,5 @@ const Housekeeping = () => {
     </div>
   );
 };
+
+export default Housekeeping;

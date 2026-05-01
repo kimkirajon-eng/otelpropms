@@ -6,96 +6,88 @@ import POS from '../components/POS';
 
 const AdminDashboard = ({ user, onLogout }) => {
   const [activeTab, setActiveTab] = useState('frontoffice');
-  const [stats, setStats] = useState({ occupied: 42, dirty: 5, pendingRes: 12 });
-  const [notification, setNotification] = useState(null);
-
-  // REAL-TIME SİMÜLASYONU: Hata düzeltildi
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setNotification("🔔 Housekeeping: 104 numaralı oda temizlendi!");
-      setStats((prev) => ({ ...prev, dirty: prev.dirty - 1 }));
-      
-      setTimeout(() => setNotification(null), 5000);
-    }, 10000);
-    return () => clearTimeout(timer);
-  }, []);
+  const [stats] = useState({ occupied: 42, dirty: 5, pendingRes: 12 });
 
   return (
-    <div className="flex h-screen bg-slate-50 font-sans antialiased text-slate-900">
-      {/* Yan Menü (Sidebar) */}
-      <aside className="w-80 bg-slate-900 text-white flex flex-col shadow-2xl z-20">
-        <div className="p-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-8 h-8 bg-orange-500 rounded-lg rotate-12 flex items-center justify-center font-black">H</div>
-            <h1 className="text-xl font-black tracking-tight italic">OTELPRO <span className="text-orange-500">PMS</span></h1>
-          </div>
-          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.3em]">Management Console</p>
+    <div className="pms-container">
+      {/* Yan Menü */}
+      <aside className="pms-sidebar">
+        <div className="pms-logo">
+          <span className="logo-icon">H</span>
+          <div className="logo-text">OTELPRO <span>PMS</span></div>
         </div>
         
-        <nav className="flex-1 px-4 space-y-1">
-          <NavItem icon="🏨" label="Resepsiyon" active={activeTab === 'frontoffice'} onClick={() => setActiveTab('frontoffice')} />
-          <NavItem icon="🧹" label="Kat Hizmetleri" active={activeTab === 'hk'} onClick={() => setActiveTab('hk')} />
-          <NavItem icon="💰" label="Finans / Folio" active={activeTab === 'finance'} onClick={() => setActiveTab('finance')} />
-          <NavItem icon="🍽️" label="Restaurant POS" active={activeTab === 'pos'} onClick={() => setActiveTab('pos')} />
+        <nav className="pms-nav">
+          <button className={activeTab === 'frontoffice' ? 'active' : ''} onClick={() => setActiveTab('frontoffice')}>🏨 Resepsiyon</button>
+          <button className={activeTab === 'hk' ? 'active' : ''} onClick={() => setActiveTab('hk')}>🧹 Kat Hizmetleri</button>
+          <button className={activeTab === 'finance' ? 'active' : ''} onClick={() => setActiveTab('finance')}>💰 Finans / Folio</button>
+          <button className={activeTab === 'pos' ? 'active' : ''} onClick={() => setActiveTab('pos')}>🍽️ Restaurant POS</button>
         </nav>
 
-        <div className="p-6 bg-slate-950/50 m-4 rounded-3xl border border-white/5">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center font-black text-xl shadow-lg">
-              {user?.username ? user.username.charAt(0).toUpperCase() : 'A'}
-            </div>
-            <div>
-              <p className="text-sm font-bold truncate w-32">{user?.username || 'Yönetici'}</p>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Master Admin</p>
-            </div>
+        <div className="pms-user-box">
+          <div className="user-avatar">{user?.username ? user.username[0].toUpperCase() : 'A'}</div>
+          <div className="user-info">
+            <strong>{user?.username || 'Yönetici'}</strong>
+            <span>Master Admin</span>
           </div>
-          <button onClick={onLogout} className="w-full py-3 bg-white/5 hover:bg-red-500 transition-all rounded-2xl text-xs font-bold uppercase tracking-widest text-slate-300 hover:text-white">Çıkış Yap</button>
+          <button className="logout-btn" onClick={onLogout}>Çıkış</button>
         </div>
       </aside>
 
-      {/* Ana Ekran (Main Area) */}
-      <main className="flex-1 flex flex-col relative overflow-hidden">
-        {/* Üst Bar (Header) */}
-        <header className="h-24 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-12 z-10">
-          <div className="flex gap-12">
-            <Stat label="Dolu Oda" value={stats.occupied} color="text-blue-600" />
-            <Stat label="Kirli" value={stats.dirty} color="text-red-500" />
-            <Stat label="Bekleyen" value={stats.pendingRes} color="text-emerald-500" />
+      {/* Ana Ekran */}
+      <main className="pms-main">
+        <header className="pms-header">
+          <div className="header-stats">
+            <div className="stat-item"><label>DOLU ODA</label><span className="blue">{stats.occupied}</span></div>
+            <div className="stat-item"><label>KİRLİ</label><span className="red">{stats.dirty}</span></div>
+            <div className="stat-item"><label>BEKLEYEN</label><span className="green">{stats.pendingRes}</span></div>
           </div>
-          
-          {notification && (
-            <div className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold text-sm shadow-xl shadow-blue-200 animate-bounce">
-              {notification}
-            </div>
-          )}
+          <div className="system-status">● Sistem Çevrimiçi</div>
         </header>
 
-        {/* Dinamik İçerik Alanı */}
-        <div className="flex-1 overflow-y-auto p-12 bg-slate-50">
-          <div className="max-w-6xl mx-auto">
-            {activeTab === 'frontoffice' && <FrontOffice />}
-            {activeTab === 'hk' && <Housekeeping />}
-            {activeTab === 'finance' && <Finance />}
-            {activeTab === 'pos' && <POS />}
-          </div>
-        </div>
+        <section className="pms-content">
+          {activeTab === 'frontoffice' && <FrontOffice />}
+          {activeTab === 'hk' && <Housekeeping />}
+          {activeTab === 'finance' && <Finance />}
+          {activeTab === 'pos' && <POS />}
+        </section>
       </main>
+
+      {/* GÖMÜLÜ CSS - TASARIM MOTORU BURASI */}
+      <style>{`
+        .pms-container { display: flex; h-height: 100vh; background: #f0f2f5; font-family: 'Inter', sans-serif; color: #1a1f36; height: 100vh; overflow: hidden; }
+        .pms-sidebar { width: 280px; background: #1a1f36; color: white; display: flex; flex-direction: column; padding: 20px; box-shadow: 4px 0 15px rgba(0,0,0,0.1); }
+        .pms-logo { display: flex; align-items: center; gap: 12px; padding: 20px 10px; margin-bottom: 30px; }
+        .logo-icon { background: #ff4d00; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-weight: 900; transform: rotate(10deg); }
+        .logo-text { font-weight: 900; font-size: 1.2rem; letter-spacing: -1px; }
+        .logo-text span { color: #ff4d00; }
+        
+        .pms-nav { flex: 1; }
+        .pms-nav button { width: 100%; text-align: left; padding: 15px; margin-bottom: 5px; background: none; border: none; color: #a0aec0; font-weight: 600; cursor: pointer; border-radius: 12px; transition: 0.3s; }
+        .pms-nav button:hover { background: rgba(255,255,255,0.05); color: white; }
+        .pms-nav button.active { background: #ff4d00; color: white; box-shadow: 0 10px 20px rgba(255,77,0,0.3); }
+
+        .pms-user-box { background: rgba(0,0,0,0.2); padding: 15px; border-radius: 20px; display: flex; align-items: center; gap: 12px; position: relative; }
+        .user-avatar { width: 45px; height: 45px; background: linear-gradient(45deg, #ff4d00, #ff8000); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1.2rem; }
+        .user-info strong { display: block; font-size: 0.9rem; }
+        .user-info span { font-size: 0.7rem; color: #718096; text-transform: uppercase; font-weight: 800; }
+        .logout-btn { margin-left: auto; background: none; border: 1px solid #4a5568; color: #fc8181; padding: 5px 10px; border-radius: 8px; cursor: pointer; font-size: 0.7rem; }
+
+        .pms-main { flex: 1; display: flex; flex-direction: column; }
+        .pms-header { height: 90px; background: white; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; border-bottom: 1px solid #e2e8f0; }
+        .header-stats { display: flex; gap: 40px; }
+        .stat-item label { display: block; font-size: 0.6rem; font-weight: 900; color: #a0aec0; letter-spacing: 1.5px; margin-bottom: 4px; }
+        .stat-item span { font-size: 1.5rem; font-weight: 900; }
+        .stat-item .blue { color: #3182ce; }
+        .stat-item .red { color: #e53e3e; }
+        .stat-item .green { color: #38a169; }
+        .system-status { font-size: 0.7rem; color: #38a169; font-weight: 800; animation: pulse 2s infinite; }
+
+        .pms-content { flex: 1; padding: 40px; overflow-y: auto; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+      `}</style>
     </div>
   );
 };
-
-const NavItem = ({ icon, label, active, onClick }) => (
-  <button onClick={onClick} className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 font-bold text-sm ${active ? 'bg-orange-500 text-white shadow-xl shadow-orange-500/40 translate-x-2' : 'hover:bg-slate-800 text-slate-500'}`}>
-    <span className="text-xl">{icon}</span>
-    {label}
-  </button>
-);
-
-const Stat = ({ label, value, color }) => (
-  <div className="flex flex-col">
-    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1">{label}</p>
-    <p className={`text-3xl font-black ${color} tracking-tighter`}>{value}</p>
-  </div>
-);
 
 export default AdminDashboard;

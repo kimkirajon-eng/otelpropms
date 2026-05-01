@@ -1,63 +1,51 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 const Housekeeping = () => {
-  const [tasks, setTasks] = useState([
-    { id: 101, staff: 'Ayşe K.', status: 'Cleaning', progress: 65, type: 'Suite' },
-    { id: 104, staff: 'Fatma Y.', status: 'Dirty', progress: 0, type: 'Deluxe' },
-    { id: 205, staff: 'Zeynep M.', status: 'Inspected', progress: 100, type: 'Standard' },
-  ]);
+  const rooms = [
+    { id: 101, staff: 'Ayşe K.', status: 'Temizleniyor', progress: 65, note: 'VIP Misafir Bekleniyor' },
+    { id: 102, staff: '-', status: 'Kirli', progress: 0, note: 'Check-out yapıldı' },
+    { id: 103, staff: 'Mehmet T.', status: 'Arızalı', progress: 0, note: 'Klima sorunu' },
+    { id: 104, staff: 'Fatma Y.', status: 'Denetleniyor', progress: 100, note: 'Hazır' },
+  ];
 
   return (
-    <div className="animate-in slide-in-from-bottom-4 duration-700">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h2 className="text-3xl font-black text-slate-800 underline decoration-blue-500 decoration-4">Kat Hizmetleri</h2>
-          <p className="text-slate-400 font-medium text-sm mt-1">Anlık Oda Temizlik ve Bakım Takibi</p>
-        </div>
-        <div className="flex gap-4">
-            <div className="bg-white px-6 py-2 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-3">
-                <span className="w-3 h-3 bg-red-500 rounded-full animate-ping"></span>
-                <span className="font-bold text-sm text-slate-600">5 Kirli Oda</span>
-            </div>
+    <div className="p-4 space-y-6">
+      <div className="flex justify-between items-end">
+        <h2 className="text-4xl font-extrabold text-slate-900 tracking-tight">Kat Hizmetleri <span className="text-blue-600">.</span></h2>
+        <div className="flex gap-2">
+            <button className="bg-white border px-4 py-2 rounded-xl text-sm font-bold shadow-sm">Rapor Al</button>
+            <button className="bg-blue-600 text-white px-6 py-2 rounded-xl text-sm font-bold shadow-lg shadow-blue-200">🧹 Görev Ata</button>
         </div>
       </div>
 
-      <div className="bg-white rounded-[2rem] shadow-xl shadow-slate-200/50 overflow-hidden border border-slate-100">
-        <table className="w-full text-left border-collapse">
-          <thead className="bg-slate-900 text-white">
-            <tr>
-              <th className="p-6 uppercase text-[10px] tracking-widest font-black">Oda No</th>
-              <th className="p-6 uppercase text-[10px] tracking-widest font-black">Görevli</th>
-              <th className="p-6 uppercase text-[10px] tracking-widest font-black">Durum</th>
-              <th className="p-6 uppercase text-[10px] tracking-widest font-black">İlerleme</th>
-              <th className="p-6 uppercase text-[10px] tracking-widest font-black text-right">İşlem</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-50">
-            {tasks.map(task => (
-              <tr key={task.id} className="hover:bg-slate-50/80 transition-colors">
-                <td className="p-6 font-black text-xl text-slate-800">{task.id} <span className="text-[10px] text-slate-400 block">{task.type}</span></td>
-                <td className="p-6 font-bold text-slate-600">{task.staff}</td>
-                <td className="p-6">
-                  <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase ${task.status === 'Cleaning' ? 'bg-blue-100 text-blue-600' : task.status === 'Inspected' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                    {task.status}
-                  </span>
-                </td>
-                <td className="p-6 w-64">
-                  <div className="flex items-center gap-3">
-                    <div className="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden">
-                      <div className={`h-full transition-all duration-1000 ${task.progress === 100 ? 'bg-green-500' : 'bg-blue-500'}`} style={{ width: `${task.progress}%` }}></div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {rooms.map(room => (
+          <div key={room.id} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300">
+            <div className="flex justify-between items-start mb-4">
+              <span className="text-3xl font-black text-slate-800">{room.id}</span>
+              <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${room.status === 'Kirli' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'}`}>{room.status}</span>
+            </div>
+            <div className="space-y-4">
+                <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Görevli Personel</p>
+                    <p className="font-bold text-slate-700">{room.staff}</p>
+                </div>
+                <div className="bg-slate-50 p-3 rounded-2xl">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Durum Notu</p>
+                    <p className="text-xs text-slate-600 italic">"{room.note}"</p>
+                </div>
+                <div className="pt-2">
+                    <div className="flex justify-between text-[10px] font-bold mb-1">
+                        <span>İlerleme</span>
+                        <span>%{room.progress}</span>
                     </div>
-                    <span className="text-xs font-black text-slate-500">%{task.progress}</span>
-                  </div>
-                </td>
-                <td className="p-6 text-right">
-                  <button className="bg-slate-100 p-2 rounded-lg hover:bg-orange-500 hover:text-white transition-all">⚙️</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                    <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                        <div className="h-full bg-blue-600 transition-all duration-500" style={{width: `${room.progress}%`}}></div>
+                    </div>
+                </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -1,24 +1,8 @@
-const Housekeeping = () => {
-  const updateStatus = (id, status) => {
-    // API Call to /hk/update-status
-  };
-
-  return (
-    <div className="p-4 max-w-md mx-auto">
-      <h1 className="text-xl font-bold border-b pb-2 mb-4">Kat Hizmetleri Görev Listesi</h1>
-      <div className="space-y-4">
-        {[101, 102, 201].map(id => (
-          <div key={id} className="flex justify-between items-center p-3 border rounded shadow">
-            <span>Oda {id}</span>
-            <div className="flex gap-2">
-              <button onClick={() => updateStatus(id, 'Cleaning')} className="bg-yellow-500 text-white px-3 py-1 rounded">Temizlikte</button>
-              <button onClick={() => updateStatus(id, 'Clean')} className="bg-green-500 text-white px-3 py-1 rounded">Hazır</button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
+import React from 'react';
+const Housekeeping = () => (
+  <div className="p-6 bg-white rounded-3xl shadow-sm border border-slate-100">
+    <h2 className="text-2xl font-black mb-4">Kat Hizmetleri Paneli</h2>
+    <p className="text-slate-500">Oda temizlik durumları ve personel atamaları burada listelenecek.</p>
+  </div>
+);
 export default Housekeeping;

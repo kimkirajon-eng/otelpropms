@@ -9,7 +9,7 @@ const AdminDashboard = ({ user, onLogout }) => {
   const [stats, setStats] = useState({ occupied: 42, dirty: 5, pendingRes: 12 });
 
   return (
-    <div className="flex h-screen bg-slate-50 font-sans text-slate-900">
+    <div className="bg-red-500 text-white p-10 text-5xl">TEST MESAJI</div>
       {/* Sidebar - Profesyonel Koyu Tema */}
       <aside className="w-72 bg-slate-900 text-white flex flex-col shadow-2xl">
         <div className="p-8 border-b border-slate-800">

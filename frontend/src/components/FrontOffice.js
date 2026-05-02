@@ -12,13 +12,14 @@ const FrontOffice = () => {
     current_status: 'Temiz'
   });
 
+  // 📥 ODALARI ÇEK
   const fetchRooms = async () => {
     try {
-      const res = await fetch(`${API_URL}/rooms`);
+      const res = await fetch(`${API_URL}/res/rooms`);
       const data = await res.json();
       setRooms(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error("Veri okuma hatası:", err);
+      console.error("Oda çekme hatası:", err);
     } finally {
       setLoading(false);
     }
@@ -28,10 +29,12 @@ const FrontOffice = () => {
     fetchRooms();
   }, []);
 
+  // ➕ ODA EKLE
   const handleAddRoom = async (e) => {
     e.preventDefault();
+
     try {
-      const res = await fetch(`${API_URL}/rooms`, {
+      const res = await fetch(`${API_URL}/res/rooms`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -52,63 +55,67 @@ const FrontOffice = () => {
           price: '',
           current_status: 'Temiz'
         });
-        fetchRooms();
+
+        fetchRooms(); // tekrar çek
+      } else {
+        console.error("Oda ekleme başarısız");
       }
+
     } catch (err) {
+      console.error("POST hatası:", err);
       alert("Oda eklenemedi.");
     }
   };
 
-  if (loading)
+  if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '100px', fontWeight: 'bold' }}>
-        Sistem Yükleniyor...
+        Yükleniyor...
       </div>
     );
+  }
 
   return (
     <div className="module-container">
-      <div className="module-header" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '30px', alignItems: 'center' }}>
-        <h2 style={{ fontSize: '2rem', fontWeight: '900', color: '#1a1f36', margin: 0 }}>
-          Oda Rack Planı
-        </h2>
+
+      {/* HEADER */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '30px' }}>
+        <h2>Oda Rack Planı</h2>
+
         <button
           onClick={() => setShowModal(true)}
           style={{
             background: '#1a1f36',
             color: 'white',
-            border: 'none',
-            padding: '12px 25px',
-            borderRadius: '12px',
-            fontWeight: 'bold',
-            cursor: 'pointer'
+            padding: '12px 20px',
+            borderRadius: '10px',
+            border: 'none'
           }}
         >
-          + Yeni Oda Ekle
+          + Yeni Oda
         </button>
       </div>
 
+      {/* MODAL */}
       {showModal && (
         <div style={{
           position: 'fixed',
           top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.8)',
+          background: 'rgba(0,0,0,0.6)',
           display: 'flex',
-          alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 1000,
-          backdropFilter: 'blur(5px)'
+          alignItems: 'center'
         }}>
-          <div style={{ background: 'white', padding: '40px', borderRadius: '30px', width: '350px' }}>
-            <h3 style={{ marginBottom: '25px', fontWeight: '900' }}>Yeni Oda Kaydet</h3>
+
+          <div style={{ background: '#fff', padding: 30, borderRadius: 20, width: 300 }}>
+            <h3>Yeni Oda</h3>
+
             <form onSubmit={handleAddRoom}>
-              
               <input
-                type="text"
                 placeholder="Oda No"
-                required
                 value={newRoom.room_number}
                 onChange={e => setNewRoom({ ...newRoom, room_number: e.target.value })}
+                required
               />
 
               <select
@@ -123,32 +130,36 @@ const FrontOffice = () => {
               <input
                 type="number"
                 placeholder="Fiyat"
-                required
                 value={newRoom.price}
                 onChange={e => setNewRoom({ ...newRoom, price: e.target.value })}
+                required
               />
 
               <button type="submit">Kaydet</button>
+              <button type="button" onClick={() => setShowModal(false)}>
+                İptal
+              </button>
             </form>
           </div>
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '25px' }}>
+      {/* ODALAR */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 20 }}>
         {rooms.length === 0 ? (
-          <div>Henüz oda yok</div>
+          <div>Oda yok</div>
         ) : (
-          rooms.map((room) => (
-            <div key={room.id} style={{ border: '1px solid #ddd', padding: '20px', borderRadius: '10px' }}>
+          rooms.map(room => (
+            <div key={room.id} style={{ border: '1px solid #ddd', padding: 15, borderRadius: 10 }}>
               <h3>{room.room_number}</h3>
               <p>{room.room_type}</p>
               <p>{room.current_status}</p>
-              <p>₺{room.price}</p>
-              <strong>{room.guest_name || 'MÜSAİT'}</strong>
+              <strong>₺{room.price}</strong>
             </div>
           ))
         )}
       </div>
+
     </div>
   );
 };

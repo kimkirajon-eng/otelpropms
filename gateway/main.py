@@ -6,7 +6,6 @@ from fastapi.responses import Response
 
 app = FastAPI(title="OtelPro API Gateway")
 
-# 1. CORS AYARI: Tarayıcı engellerini (JSON okuma hatasını) kaldırır
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -15,7 +14,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 2. SERVİS ADRESLERİ
 SERVICES = {
     "auth": os.getenv("IDENTITY_SERVICE_URL", "").rstrip('/'),
     "res": os.getenv("RESERVATION_SERVICE_URL", "").rstrip('/'),
@@ -27,7 +25,6 @@ SERVICES = {
 async def root():
     return {"status": "Gateway Live", "active_services": list(SERVICES.keys())}
 
-# 3. DİNAMİK PROXY (Boşluk temizleme özellikli)
 @app.api_route("/{service_name}/{rest_of_path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 async def proxy(service_name: str, rest_of_path: str, request: Request):
     if service_name not in SERVICES or not SERVICES[service_name]:
@@ -47,9 +44,13 @@ async def proxy(service_name: str, rest_of_path: str, request: Request):
                 timeout=30.0
             )
             
-            # KRİTİK DÜZELTME: .strip() ile baştaki/sondaki gizli boşlukları temizliyoruz
-            # Bu işlem "Unexpected token ' '" hatasını KESİN çözer.
-            clean_content = response.content.strip()
+            # SÜPER TEMİZLEYİCİ: 
+            # 1. decode("utf-8-sig") -> Görünmez ï»¿ (BOM) karakterlerini temizler.
+            # 2. strip() -> Başındaki ve sonundaki tüm gizli boşlukları siler.
+            try:
+                clean_content = response.content.decode("utf-8-sig").strip()
+            except:
+                clean_content = response.text.strip()
             
             return Response(
                 content=clean_content,
@@ -59,7 +60,6 @@ async def proxy(service_name: str, rest_of_path: str, request: Request):
         except Exception as e:
             return Response(content=f'{{"error": "Baglanti Hatasi", "detail": "{str(e)}"}}', status_code=500, media_type="application/json")
 
-# 4. RENDER PORT AYARI
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 10000))

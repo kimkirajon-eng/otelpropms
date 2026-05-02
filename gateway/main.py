@@ -32,6 +32,7 @@ async def proxy(service_name: str, rest_of_path: str, request: Request):
         return JSONResponse({"error": "Servis adresi bulunamadi"}, status_code=404)
 
     target_url = f"{SERVICES[service_name]}/{rest_of_path}"
+    print(f"📤 Proxy istegi: {request.method} {target_url}") # Debug log
     
     async with httpx.AsyncClient() as client:
         try:
@@ -45,19 +46,29 @@ async def proxy(service_name: str, rest_of_path: str, request: Request):
                 timeout=30.0
             )
             
-            # GİZLİ KARAKTER VE BOŞLUK TEMİZLEME
+            print(f"📥 Yanıt kodu: {response.status_code}") # Debug log
+            
             try:
-                # utf-8-sig: Görünmez BOM karakterlerini siler, .strip(): Boşlukları siler
+                # UTF-8 temizliği ve JSON parsing
                 clean_text = response.content.decode("utf-8-sig").strip()
-                # Metni gerçek bir JSON nesnesine çevir (Hata riskini sıfırlar)
+                print(f"📦 Temiz veri: {clean_text[:200]}...") # Debug log
+                
                 data = json.loads(clean_text)
                 return JSONResponse(content=data, status_code=response.status_code)
-            except:
-                # Eğer JSON değilse (örn: düz metin hatası), olduğu gibi dön
-                return JSONResponse({"error": "Veri ayrıştırma hatası", "raw": response.text[:100]})
+            except json.JSONDecodeError as e:
+                print(f"❌ JSON Parse Hatası: {e}") # Debug log
+                print(f"   Raw: {response.text[:200]}") # Debug log
+                return JSONResponse(
+                    {"error": "JSON parse hatası", "raw": response.text[:200]}, 
+                    status_code=500
+                )
 
         except Exception as e:
-            return JSONResponse({"error": "Baglanti hatasi", "detail": str(e)}, status_code=500)
+            print(f"❌ Baglanti hatasi: {str(e)}") # Debug log
+            return JSONResponse(
+                {"error": "Baglanti hatasi", "detail": str(e)}, 
+                status_code=500
+            )
 
 if __name__ == "__main__":
     import uvicorn

@@ -1,9 +1,9 @@
 import os
 import httpx
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI(title="OtelPro API Gateway")
+app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
@@ -20,39 +20,22 @@ SERVICES = {
     "finance": os.getenv("FINANCE_SERVICE_URL", "").rstrip('/')
 }
 
-@app.get("/")
-async def root():
-    return {"status": "Gateway Aktif", "services": list(SERVICES.keys())}
-
 @app.api_route("/{service_name}/{rest_of_path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 async def proxy(service_name: str, rest_of_path: str, request: Request):
-    if service_name not in SERVICES or not SERVICES[service_name]:
-        raise HTTPException(status_code=404, detail="Servis tanimsiz")
-
+    if service_name not in SERVICES: return {"error": "Servis yok"}
+    
     target_url = f"{SERVICES[service_name]}/{rest_of_path}"
+    body = await request.body()
     
     async with httpx.AsyncClient() as client:
-        try:
-            body = await request.body()
-            response = await client.request(
-                method=request.method,
-                url=target_url,
-                params=request.query_params,
-                content=body,
-                headers={k: v for k, v in request.headers.items() if k.lower() != "host"},
-                timeout=30.0
-            )
-            
-            # GÜVENLİ DECODE: Veri bozuksa bile hata vermeden işle
-            try:
-                return response.json()
-            except:
-                return {"message": "Veri okunamadi", "raw_content": str(response.content)}
-
-        except Exception as e:
-            return {"error": "Baglanti Hatasi", "detay": str(e), "url": target_url}
-
-if __name__ == "__main__":
-    import uvicorn
-    port = int(os.getenv("PORT", 10000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+        response = await client.request(
+            method=request.method,
+            url=target_url,
+            params=request.query_params,
+            content=body,
+            headers={k: v for k, v in request.headers.items() if k.lower() != "host"},
+            timeout=10.0
+        )
+        # EN GARANTİ SATIR: Veriyi işleme, direkt yanıtı dön
+        from fastapi.responses import Response
+        return Response(content=response.content, status_code=response.status_code, media_type=response.headers.get("content-type"))

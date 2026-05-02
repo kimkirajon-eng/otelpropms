@@ -8,36 +8,22 @@ const FrontOffice = () => {
   const [newRoom, setNewRoom] = useState({ room_number: '', room_type: 'Standart', price: '', current_status: 'Temiz' });
 
   const fetchRooms = async () => {
+    setLoading(true); // ⭐ EKLENDI: Her fetch'te loading başlasın
     try {
       const res = await fetch(`${API_URL}/res/rooms`);
-      const rawText = await res.text();
-      
-      // MUCİZE ÇÖZÜM: JSON'un başladığı '[' ve bittiği ']' arasını bulur
-      const jsonStart = rawText.indexOf('[');
-      const jsonEnd = rawText.lastIndexOf(']') + 1;
-      
-      if (jsonStart !== -1 && jsonEnd !== -1) {
-        const cleanJson = rawText.substring(jsonStart, jsonEnd);
-        const data = JSON.parse(cleanJson);
-        setRooms(Array.isArray(data) ? data : []);
-      } else {
-        // Eğer liste değil tek bir objeyse '{' kontrolü yap
-        const objStart = rawText.indexOf('{');
-        const objEnd = rawText.lastIndexOf('}') + 1;
-        if(objStart !== -1) {
-           const cleanObj = rawText.substring(objStart, objEnd);
-           const data = JSON.parse(cleanObj);
-           setRooms(Array.isArray(data) ? data : [data]);
-        }
-      }
+      const data = await res.json(); // ⭐ DEĞIŞTI: .json() kullan, text() değil
+      setRooms(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Veri okuma hatası:", err);
+      setRooms([]); // Hata durumunda boş dizi set et
     } finally {
-      setLoading(false);
+      setLoading(false); // ⭐ EKLENDI: Her seferinde false yap
     }
   };
 
-  useEffect(() => { fetchRooms(); }, []);
+  useEffect(() => { 
+    fetchRooms(); 
+  }, []);
 
   const handleAddRoom = async (e) => {
     e.preventDefault();
@@ -52,12 +38,18 @@ const FrontOffice = () => {
           current_status: "Temiz"
         })
       });
+      
       if (res.ok) {
-        setShowModal(false);
         setNewRoom({ room_number: '', room_type: 'Standart', price: '', current_status: 'Temiz' });
-        fetchRooms();
+        await fetchRooms(); // ⭐ EKLENDI: await ile bekle, sonra modal kapat
+        setShowModal(false);
+      } else {
+        alert("Oda kaydedilemedi!");
       }
-    } catch (err) { alert("Oda eklenemedi."); }
+    } catch (err) { 
+      console.error("Oda ekleme hatası:", err);
+      alert("Oda eklenemedi."); 
+    }
   };
 
   if (loading) return <div style={{textAlign:'center', padding:'100px', fontWeight:'bold'}}>Sistem Yükleniyor...</div>;

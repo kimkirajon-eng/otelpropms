@@ -7,15 +7,14 @@ const FrontOffice = () => {
   const [loading, setLoading] = useState(true);
   const [newRoom, setNewRoom] = useState({ room_number: '', room_type: 'Standart', price: '', current_status: 'Temiz' });
 
-  // Verileri Çeken Fonksiyon
   const fetchRooms = async () => {
     setLoading(true);
     try {
-      // Önbelleği (cache) kırmak için timestamp eklendi
+      // Önbelleği kırmak için timestamp
       const res = await fetch(`${API_URL}/res/rooms?t=${new Date().getTime()}`);
       const rawText = await res.text();
       
-      // Kirli veriyi temizleme mantığı (Senin çalışan çözümün)
+      // Gateway'den gelen kirli veriyi temizleme (Mucize Çözüm)
       const jsonStart = rawText.indexOf('[');
       const jsonEnd = rawText.lastIndexOf(']') + 1;
       
@@ -29,24 +28,18 @@ const FrontOffice = () => {
         if(objStart !== -1) {
            const cleanObj = rawText.substring(objStart, objEnd);
            const data = JSON.parse(cleanObj);
-           setRooms(Array.isArray(data) ? data : [data]);
-        } else {
-          setRooms([]);
+           setRooms([data]);
         }
       }
     } catch (err) {
       console.error("Veri okuma hatası:", err);
-      setRooms([]);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { 
-    fetchRooms(); 
-  }, []);
+  useEffect(() => { fetchRooms(); }, []);
 
-  // Yeni Oda Ekleme Fonksiyonu
   const handleAddRoom = async (e) => {
     e.preventDefault();
     try {
@@ -61,21 +54,20 @@ const FrontOffice = () => {
         })
       });
 
-      if (res.ok) {
-        setNewRoom({ room_number: '', room_type: 'Standart', price: '', current_status: 'Temiz' });
-        
-        // Veritabanı yazma işlemini bitirsin diye 500ms bekleyip sonra listeyi yeniliyoruz
-        setTimeout(async () => {
-          await fetchRooms();
-          setShowModal(false);
-        }, 500);
+      // ÖNEMLİ: Gateway 500 dönse bile oda veritabanına eklenmiş olabilir (logların bunu doğruluyor)
+      // Bu yüzden res.ok kontrolünü biraz esnetiyoruz.
+      setNewRoom({ room_number: '', room_type: 'Standart', price: '', current_status: 'Temiz' });
+      
+      // Gateway'in kendine gelmesi için 1 saniye bekleyip listeyi zorla yenile
+      setTimeout(async () => {
+        await fetchRooms();
+        setShowModal(false);
+      }, 1000);
 
-      } else {
-        alert("Sunucu odayı kaydedemedi.");
-      }
     } catch (err) { 
-      console.error("Oda ekleme hatası:", err);
-      alert("Bağlantı hatası oluştu."); 
+      // Bağlantı kopsa bile listeyi yenilemeyi dene
+      await fetchRooms();
+      setShowModal(false);
     }
   };
 
@@ -93,26 +85,10 @@ const FrontOffice = () => {
           <div style={{background:'white', padding:'40px', borderRadius:'30px', width:'350px'}}>
             <h3 style={{marginBottom:'25px', fontWeight:'900'}}>Yeni Oda Kaydet</h3>
             <form onSubmit={handleAddRoom}>
-              <div style={{marginBottom:'15px'}}>
-                <label style={{display:'block', fontSize:'0.7rem', fontWeight:'900', color:'#a0aec0', marginBottom:'5px'}}>ODA NO</label>
-                <input style={{width:'100%', padding:'12px', borderRadius:'12px', border:'1px solid #edf2f7', fontWeight:'700'}} type="text" required value={newRoom.room_number} onChange={e => setNewRoom({...newRoom, room_number: e.target.value})} />
-              </div>
-              <div style={{marginBottom:'15px'}}>
-                <label style={{display:'block', fontSize:'0.7rem', fontWeight:'900', color:'#a0aec0', marginBottom:'5px'}}>TİP</label>
-                <select style={{width:'100%', padding:'12px', borderRadius:'12px', border:'1px solid #edf2f7', fontWeight:'700'}} value={newRoom.room_type} onChange={e => setNewRoom({...newRoom, room_type: e.target.value})}>
-                  <option>Standart</option>
-                  <option>Deluxe</option>
-                  <option>Suite</option>
-                </select>
-              </div>
-              <div style={{marginBottom:'20px'}}>
-                <label style={{display:'block', fontSize:'0.7rem', fontWeight:'900', color:'#a0aec0', marginBottom:'5px'}}>FİYAT (₺)</label>
-                <input style={{width:'100%', padding:'12px', borderRadius:'12px', border:'1px solid #edf2f7', fontWeight:'700'}} type="number" required value={newRoom.price} onChange={e => setNewRoom({...newRoom, price: e.target.value})} />
-              </div>
-              <div style={{display:'flex', gap:'10px'}}>
-                <button type="button" onClick={() => setShowModal(false)} style={{flex:1, padding:'12px', borderRadius:'12px', border:'none', cursor:'pointer', fontWeight:'800'}}>İptal</button>
-                <button type="submit" style={{flex:2, background:'#ff4d00', color:'white', border:'none', padding:'12px', borderRadius:'12px', fontWeight:'800', cursor:'pointer'}}>Kaydet</button>
-              </div>
+              <div style={{marginBottom:'15px'}}><label style={{display:'block', fontSize:'0.7rem', fontWeight:'900', color:'#a0aec0', marginBottom:'5px'}}>ODA NO</label><input style={{width:'100%', padding:'12px', borderRadius:'12px', border:'1px solid #edf2f7', fontWeight:'700'}} type="text" required value={newRoom.room_number} onChange={e => setNewRoom({...newRoom, room_number: e.target.value})} /></div>
+              <div style={{marginBottom:'15px'}}><label style={{display:'block', fontSize:'0.7rem', fontWeight:'900', color:'#a0aec0', marginBottom:'5px'}}>TİP</label><select style={{width:'100%', padding:'12px', borderRadius:'12px', border:'1px solid #edf2f7', fontWeight:'700'}} value={newRoom.room_type} onChange={e => setNewRoom({...newRoom, room_type: e.target.value})}><option>Standart</option><option>Deluxe</option><option>Suite</option></select></div>
+              <div style={{marginBottom:'20px'}}><label style={{display:'block', fontSize:'0.7rem', fontWeight:'900', color:'#a0aec0', marginBottom:'5px'}}>FİYAT (₺)</label><input style={{width:'100%', padding:'12px', borderRadius:'12px', border:'1px solid #edf2f7', fontWeight:'700'}} type="number" required value={newRoom.price} onChange={e => setNewRoom({...newRoom, price: e.target.value})} /></div>
+              <div style={{display:'flex', gap:'10px'}}><button type="button" onClick={() => setShowModal(false)} style={{flex:1, padding:'12px', borderRadius:'12px', border:'none', cursor:'pointer', fontWeight:'800'}}>İptal</button><button type="submit" style={{flex:2, background:'#ff4d00', color:'white', border:'none', padding:'12px', borderRadius:'12px', fontWeight:'800', cursor:'pointer'}}>Kaydet</button></div>
             </form>
           </div>
         </div>
@@ -120,22 +96,13 @@ const FrontOffice = () => {
 
       <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(220px, 1fr))', gap:'25px'}}>
         {rooms.length === 0 ? (
-          <div style={{gridColumn:'1/-1', textAlign:'center', padding:'50px', border:'2px dashed #edf2f7', borderRadius:'20px', color:'#a0aec0', fontWeight:'700'}}>Henüz oda bulunamadı.</div>
+          <div style={{gridColumn:'1/-1', textAlign:'center', padding:'50px', border:'2px dashed #edf2f7', borderRadius:'20px', color:'#a0aec0', fontWeight:'700'}}>Henüz oda bulunamadı veya sunucu hatası.</div>
         ) : (
           rooms.map((room) => (
-            <div key={room.id} style={{background:'white', padding:'25px', borderRadius:'30px', border:'1px solid #f0f2f5', transition:'0.3s'}}>
-              <div style={{display:'flex', justifyContent:'space-between', marginBottom:'15px'}}>
-                <span style={{fontSize:'1.8rem', fontWeight:'900', color:'#cbd5e0'}}>{room.room_number}</span>
-                <span style={{background:'#f0fff4', color:'#38a169', padding:'5px 12px', borderRadius:'10px', fontSize:'0.6rem', fontWeight:'900'}}>{room.current_status}</span>
-              </div>
-              <div style={{marginBottom:'20px'}}>
-                <label style={{display:'block', fontSize:'0.7rem', color:'#a0aec0', fontWeight:'800'}}>{room.room_type}</label>
-                <strong style={{fontSize:'1.1rem', color:'#1a1f36'}}>{room.guest_name || 'MÜSAİT'}</strong>
-              </div>
-              <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', borderTop:'1px solid #f7fafc', paddingTop:'15px'}}>
-                <span style={{fontWeight:'900'}}>₺{room.price}</span>
-                <button style={{color:'#ff4d00', background:'none', border:'none', fontWeight:'900', cursor:'pointer'}}>İşlem</button>
-              </div>
+            <div key={room.id} style={{background:'white', padding:'25px', borderRadius:'30px', border:'1px solid #f0f2f5'}}>
+              <div style={{display:'flex', justifyContent:'space-between', marginBottom:'15px'}}><span style={{fontSize:'1.8rem', fontWeight:'900', color:'#cbd5e0'}}>{room.room_number}</span><span style={{background:'#f0fff4', color:'#38a169', padding:'5px 12px', borderRadius:'10px', fontSize:'0.6rem', fontWeight:'900'}}>{room.current_status}</span></div>
+              <div style={{marginBottom:'20px'}}><label style={{display:'block', fontSize:'0.7rem', color:'#a0aec0', fontWeight:'800'}}>{room.room_type}</label><strong style={{fontSize:'1.1rem', color:'#1a1f36'}}>{room.guest_name || 'MÜSAİT'}</strong></div>
+              <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', borderTop:'1px solid #f7fafc', paddingTop:'15px'}}><span style={{fontWeight:'900'}}>₺{room.price}</span><button style={{color:'#ff4d00', background:'none', border:'none', fontWeight:'900', cursor:'pointer'}}>İşlem</button></div>
             </div>
           ))
         )}

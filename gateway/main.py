@@ -2,7 +2,7 @@ import os
 import httpx
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import Response
 
 app = FastAPI()
 
@@ -21,20 +21,16 @@ SERVICES = {
     "finance": os.getenv("FINANCE_SERVICE_URL", "").rstrip('/')
 }
 
-@app.get("/")
-async def root():
-    return {"status": "Gateway Live"}
-
 @app.api_route("/{service_name}/{rest_of_path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 async def proxy(service_name: str, rest_of_path: str, request: Request):
     if service_name not in SERVICES or not SERVICES[service_name]:
-        return JSONResponse({"error": "Servis adresi eksik"}, status_code=404)
+        return Response(content='{"error": "Servis bulunamadi"}', status_code=404)
 
     target_url = f"{SERVICES[service_name]}/{rest_of_path}"
+    body = await request.body()
     
     async with httpx.AsyncClient() as client:
         try:
-            body = await request.body()
             response = await client.request(
                 method=request.method,
                 url=target_url,
@@ -43,14 +39,11 @@ async def proxy(service_name: str, rest_of_path: str, request: Request):
                 headers={k: v for k, v in request.headers.items() if k.lower() != "host"},
                 timeout=20.0
             )
-            # Veri şifreli/bozuk gelse bile çökmemesi için try-except
-            try:
-                return response.json()
-            except:
-                return JSONResponse({"error": "Veri formati hatali", "raw": str(response.content[:100])})
+            # EN GARANTİ SATIR: Veriyi asla .json() yapma, direkt "binary" içeriği dön
+            return Response(
+                content=response.content, 
+                status_code=response.status_code, 
+                media_type=response.headers.get("content-type")
+            )
         except Exception as e:
-            return JSONResponse({"error": "Baglanti hatasi", "detail": str(e)}, status_code=500)
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=10000)
+            return Response(content=f'{{"error": "{str(e)}"}}', status_code=500)

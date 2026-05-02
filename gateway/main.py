@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
+# CORS Ayarları
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -13,6 +14,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Sadece servis linkleri kalsın, veritabanı bağlantısını SİL!
 SERVICES = {
     "auth": os.getenv("IDENTITY_SERVICE_URL", "").rstrip('/'),
     "res": os.getenv("RESERVATION_SERVICE_URL", "").rstrip('/'),
@@ -20,12 +22,11 @@ SERVICES = {
     "finance": os.getenv("FINANCE_SERVICE_URL", "").rstrip('/')
 }
 
-@app.api_route("/{service_name}/{rest_of_path:path}", methods=["GET", "POST", "PUT", "DELETE"])
+@app.api_route("/{service_name}/{rest_of_path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 async def proxy(service_name: str, rest_of_path: str, request: Request):
     if service_name not in SERVICES or not SERVICES[service_name]:
         raise HTTPException(status_code=404, detail=f"Servis tanimsiz: {service_name}")
 
-    # ÖNEMLİ: Link birleştirme hatasını önlemek için
     target_url = f"{SERVICES[service_name]}/{rest_of_path}"
     
     async with httpx.AsyncClient() as client:
@@ -41,4 +42,4 @@ async def proxy(service_name: str, rest_of_path: str, request: Request):
             )
             return response.json()
         except Exception as e:
-            return {"error": "Baglanti Hatasi", "detay": str(e), "url": target_url}
+            raise HTTPException(status_code=500, detail=str(e))

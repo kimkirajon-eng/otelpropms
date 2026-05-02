@@ -1,16 +1,17 @@
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.responses import JSONResponse # ÖNEMLİ: Manuel JSON yanıtı için
 from sqlalchemy import create_engine, Column, Integer, String, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 import os
+import json
 
-# 1. DB BAĞLANTISI (Doğru formatlama)
+# 1. DB AYARLARI
 DATABASE_URL = os.getenv("DATABASE_URL", "").replace("postgres://", "postgresql://", 1)
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# 2. MODEL (Sadece ihtiyacımız olan alanlar)
 class Room(Base):
     __tablename__ = "rooms"
     id = Column(Integer, primary_key=True, index=True)
@@ -24,29 +25,27 @@ app = FastAPI()
 
 def get_db():
     db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+    try: yield db
+    finally: db.close()
 
-# 3. YOLLAR (Garantili Veri Dönüşü)
+# 2. ODALARI LİSTELEME (HATASIZ JSON GARANTİSİ)
 @app.get("/rooms")
 def list_rooms(db: Session = Depends(get_db)):
-    # Veritabanından ham veriyi çekiyoruz
     rooms_from_db = db.query(Room).all()
     
-    # HATA ÖNLEYİCİ: SQLAlchemy nesnelerini elle düz sözlüğe çeviriyoruz
-    # Böylece Pickle veya Binary karmaşası yaşanmaz
-    clean_rooms = []
+    # SQLAlchemy nesnelerini ham veri sözlüğüne çevir (Binary hatasını önler)
+    clean_data = []
     for r in rooms_from_db:
-        clean_rooms.append({
+        clean_data.append({
             "id": int(r.id),
             "room_number": str(r.room_number),
             "room_type": str(r.room_type),
             "price": float(r.price),
             "current_status": str(r.current_status)
         })
-    return clean_rooms
+    
+    # VERİYİ MANUEL OLARAK JSON FORMATINDA DÖNÜYORUZ (B hatasını KESİN çözer)
+    return JSONResponse(content=clean_data)
 
 @app.post("/rooms")
 def create_room(data: dict, db: Session = Depends(get_db)):
@@ -58,10 +57,10 @@ def create_room(data: dict, db: Session = Depends(get_db)):
         )
         db.add(new_room)
         db.commit()
-        return {"status": "success"}
+        return JSONResponse(content={"status": "success"})
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
+        return JSONResponse(content={"error": str(e)}, status_code=400)
 
 @app.get("/health")
 def health():

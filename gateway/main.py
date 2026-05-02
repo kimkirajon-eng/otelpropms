@@ -1,12 +1,10 @@
 import os
-from fastapi import FastAPI, HTTPException
+import httpx
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import create_engine, text
-from pydantic import BaseModel
 
-app = FastAPI(title="Reservation Service")
+app = FastAPI()
 
-# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -15,77 +13,32 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Database
-DATABASE_URL = os.getenv("DATABASE_URL")
-engine = create_engine(
-    DATABASE_URL,
-    pool_pre_ping=True,
-    pool_recycle=3600,
-)
+SERVICES = {
+    "auth": os.getenv("IDENTITY_SERVICE_URL", "").rstrip('/'),
+    "res": os.getenv("RESERVATION_SERVICE_URL", "").rstrip('/'),
+    "hk": os.getenv("HK_SERVICE_URL", "").rstrip('/'),
+    "finance": os.getenv("FINANCE_SERVICE_URL", "").rstrip('/')
+}
 
-# Model
-class RoomRequest(BaseModel):
-    room_number: str
-    room_type: str
-    price: int
-    current_status: str
+@app.api_route("/{service_name}/{rest_of_path:path}", methods=["GET", "POST", "PUT", "DELETE"])
+async def proxy(service_name: str, rest_of_path: str, request: Request):
+    if service_name not in SERVICES or not SERVICES[service_name]:
+        raise HTTPException(status_code=404, detail=f"Servis tanimsiz: {service_name}")
 
-# ===== ROUTES =====
-
-@app.get("/")
-async def root():
-    return {"message": "Reservation Service Çalışıyor"}
-
-# Tüm Odaları Getir
-@app.get("/rooms")
-@app.get("/res/rooms")
-async def get_rooms():
-    try:
-        with engine.connect() as conn:
-            result = conn.execute(text("SELECT * FROM rooms ORDER BY room_number"))
-            rooms = [dict(row._mapping) for row in result]
-            return rooms
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-# Yeni Oda Ekle
-@app.post("/rooms")
-@app.post("/res/rooms")
-async def create_room(room: RoomRequest):
-    try:
-        with engine.connect() as conn:
-            query = text("""
-                INSERT INTO rooms (room_number, room_type, price, current_status)
-                VALUES (:room_number, :room_type, :price, :current_status)
-                RETURNING *
-            """)
-            result = conn.execute(query, {
-                "room_number": room.room_number,
-                "room_type": room.room_type,
-                "price": room.price,
-                "current_status": room.current_status
-            })
-            conn.commit()
-            new_room = dict(result.first()._mapping)
-            return new_room
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-# Tek Odayı Getir
-@app.get("/rooms/{room_id}")
-@app.get("/res/rooms/{room_id}")
-async def get_room(room_id: int):
-    try:
-        with engine.connect() as conn:
-            result = conn.execute(text("SELECT * FROM rooms WHERE id = :id"), {"id": room_id})
-            room = result.fetchone()
-            if not room:
-                raise HTTPException(status_code=404, detail="Oda bulunamadı")
-            return dict(room._mapping)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-if __name__ == "__main__":
-    import uvicorn
-    port = int(os.getenv("PORT", 10000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    # ÖNEMLİ: Link birleştirme hatasını önlemek için
+    target_url = f"{SERVICES[service_name]}/{rest_of_path}"
+    
+    async with httpx.AsyncClient() as client:
+        try:
+            body = await request.body()
+            response = await client.request(
+                method=request.method,
+                url=target_url,
+                params=request.query_params,
+                content=body,
+                headers={k: v for k, v in request.headers.items() if k.lower() != "host"},
+                timeout=20.0
+            )
+            return response.json()
+        except Exception as e:
+            return {"error": "Baglanti Hatasi", "detay": str(e), "url": target_url}

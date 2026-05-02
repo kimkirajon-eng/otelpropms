@@ -4,8 +4,6 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 import os
 
-# 1. VERİTABANI AYARLARI
-# Render üzerindeki DATABASE_URL değişkenini çeker
 DATABASE_URL = os.getenv("DATABASE_URL")
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
@@ -14,7 +12,6 @@ engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# 2. ODA MODELİ (TABLO YAPISI)
 class Room(Base):
     __tablename__ = "rooms"
     id = Column(Integer, primary_key=True, index=True)
@@ -24,12 +21,10 @@ class Room(Base):
     current_status = Column(String, default="Temiz")
     guest_name = Column(String, nullable=True)
 
-# TABLOLARI OTOMATİK OLUŞTUR (Açılışta kontrol eder, yoksa kurar)
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Reservation Service")
+app = FastAPI()
 
-# Veritabanı Oturumu Yönetimi
 def get_db():
     db = SessionLocal()
     try:
@@ -37,21 +32,24 @@ def get_db():
     finally:
         db.close()
 
-# 3. YOLLAR (ENDPOINTS)
-
-@app.get("/health")
-async def health():
-    return {"status": "up", "database": "connected"}
-
 @app.get("/rooms")
 def list_rooms(db: Session = Depends(get_db)):
-    """Veritabanındaki tüm odaları çeker"""
     rooms = db.query(Room).all()
-    return rooms
+    # VERİ TEMİZLEME: Nesneleri düz JSON formatına çeviriyoruz
+    result = []
+    for r in rooms:
+        result.append({
+            "id": r.id,
+            "room_number": r.room_number,
+            "room_type": r.room_type,
+            "price": r.price,
+            "current_status": r.current_status,
+            "guest_name": r.guest_name
+        })
+    return result
 
 @app.post("/rooms")
 def create_room(room_data: dict, db: Session = Depends(get_db)):
-    """Yeni odayı veritabanına kalıcı olarak kaydeder"""
     try:
         new_room = Room(
             room_number=str(room_data["room_number"]),
@@ -60,18 +58,13 @@ def create_room(room_data: dict, db: Session = Depends(get_db)):
             current_status=room_data.get("current_status", "Temiz")
         )
         db.add(new_room)
-        db.commit() # VERİYİ MÜHÜRLE
+        db.commit()
         db.refresh(new_room)
-        return new_room
+        return {"status": "success", "id": new_room.id}
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=400, detail=f"Hata: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
 
-@app.post("/reservations/create")
-def create_booking(data: dict, db: Session = Depends(get_db)):
-    # Rezervasyon mantığı buraya eklenecek
-    return {"status": "success", "message": "Rezervasyon özelliği yakında!"}
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=10000)
+@app.get("/health")
+def health():
+    return {"status": "up"}

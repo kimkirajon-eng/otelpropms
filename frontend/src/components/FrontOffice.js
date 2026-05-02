@@ -7,17 +7,35 @@ const FrontOffice = () => {
   const [loading, setLoading] = useState(true);
   const [newRoom, setNewRoom] = useState({ room_number: '', room_type: 'Standart', price: '', current_status: 'Temiz' });
 
+  // Verileri Çeken Fonksiyon
   const fetchRooms = async () => {
-    setLoading(true); // ⭐ EKLENDI: Her fetch'te loading başlasın
+    setLoading(true); // Veri çekilirken yükleniyor ekranı çıksın
     try {
       const res = await fetch(`${API_URL}/res/rooms`);
-      const data = await res.json(); // ⭐ DEĞIŞTI: .json() kullan, text() değil
-      setRooms(Array.isArray(data) ? data : []);
+      const rawText = await res.text();
+      
+      // Kirli veriyi temizleme mantığı (İlk koddaki çalışan çözüm)
+      const jsonStart = rawText.indexOf('[');
+      const jsonEnd = rawText.lastIndexOf(']') + 1;
+      
+      if (jsonStart !== -1 && jsonEnd !== -1) {
+        const cleanJson = rawText.substring(jsonStart, jsonEnd);
+        const data = JSON.parse(cleanJson);
+        setRooms(Array.isArray(data) ? data : []);
+      } else {
+        const objStart = rawText.indexOf('{');
+        const objEnd = rawText.lastIndexOf('}') + 1;
+        if(objStart !== -1) {
+           const cleanObj = rawText.substring(objStart, objEnd);
+           const data = JSON.parse(cleanObj);
+           setRooms(Array.isArray(data) ? data : [data]);
+        }
+      }
     } catch (err) {
       console.error("Veri okuma hatası:", err);
-      setRooms([]); // Hata durumunda boş dizi set et
+      setRooms([]);
     } finally {
-      setLoading(false); // ⭐ EKLENDI: Her seferinde false yap
+      setLoading(false);
     }
   };
 
@@ -25,6 +43,7 @@ const FrontOffice = () => {
     fetchRooms(); 
   }, []);
 
+  // Yeni Oda Ekleme Fonksiyonu
   const handleAddRoom = async (e) => {
     e.preventDefault();
     try {
@@ -38,10 +57,12 @@ const FrontOffice = () => {
           current_status: "Temiz"
         })
       });
-      
+
       if (res.ok) {
+        // Önce state'i temizle
         setNewRoom({ room_number: '', room_type: 'Standart', price: '', current_status: 'Temiz' });
-        await fetchRooms(); // ⭐ EKLENDI: await ile bekle, sonra modal kapat
+        // ÖNEMLİ: Önce veriyi çekmeyi bekle, sonra modalı kapat
+        await fetchRooms(); 
         setShowModal(false);
       } else {
         alert("Oda kaydedilemedi!");

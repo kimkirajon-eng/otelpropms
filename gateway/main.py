@@ -1,9 +1,8 @@
 import os
 import httpx
-import json
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import Response
 
 app = FastAPI(title="OtelPro API Gateway")
 
@@ -29,13 +28,13 @@ async def root():
 @app.api_route("/{service_name}/{rest_of_path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 async def proxy(service_name: str, rest_of_path: str, request: Request):
     if service_name not in SERVICES or not SERVICES[service_name]:
-        return JSONResponse({"error": "Servis adresi bulunamadi"}, status_code=404)
+        return Response(content='{"error": "Servis adresi eksik"}', status_code=404, media_type="application/json")
 
     target_url = f"{SERVICES[service_name]}/{rest_of_path}"
+    body = await request.body()
     
     async with httpx.AsyncClient() as client:
         try:
-            body = await request.body()
             response = await client.request(
                 method=request.method,
                 url=target_url,
@@ -45,19 +44,20 @@ async def proxy(service_name: str, rest_of_path: str, request: Request):
                 timeout=30.0
             )
             
-            # GİZLİ KARAKTER VE BOŞLUK TEMİZLEME
+            # GİZLİ KARAKTER TEMİZLEYİCİ
             try:
-                # utf-8-sig: Görünmez BOM karakterlerini siler, .strip(): Boşlukları siler
+                # utf-8-sig görünmez ï»¿ karakterlerini siler, .strip() boşlukları atar
                 clean_text = response.content.decode("utf-8-sig").strip()
-                # Metni gerçek bir JSON nesnesine çevir (Hata riskini sıfırlar)
-                data = json.loads(clean_text)
-                return JSONResponse(content=data, status_code=response.status_code)
             except:
-                # Eğer JSON değilse (örn: düz metin hatası), olduğu gibi dön
-                return JSONResponse({"error": "Veri ayrıştırma hatası", "raw": response.text[:100]})
-
+                clean_text = response.text.strip()
+            
+            return Response(
+                content=clean_text,
+                status_code=response.status_code,
+                media_type="application/json"
+            )
         except Exception as e:
-            return JSONResponse({"error": "Baglanti hatasi", "detail": str(e)}, status_code=500)
+            return Response(content=f'{{"error": "Baglanti Hatasi", "detail": "{str(e)}"}}', status_code=500, media_type="application/json")
 
 if __name__ == "__main__":
     import uvicorn

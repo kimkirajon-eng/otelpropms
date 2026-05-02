@@ -1,53 +1,32 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from typing import List, Optional
-from shared.utils import MessageBus
+from fastapi import FastAPI, Depends
+from sqlalchemy.orm import Session
+from .database import SessionLocal, Room # Veritabanı bağlantıların
 
-app = FastAPI(title="Reservation Service")
-bus = MessageBus()
+app = FastAPI()
 
-# Veri Modelleri (Hata almamak için gerekli)
-class RoomCreate(BaseModel):
-    room_number: str
-    room_type: str
-    price: float
-    current_status: str = "Temiz"
-
-# SAHTE VERİTABANI (Şimdilik test için, ilerde DB'ye bağlanacak)
-rooms_db = []
-
-@app.get("/rooms")
-async def get_rooms():
-    """Tüm odaları listeler"""
-    return rooms_db
+# Veritabanı Oturumu
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 @app.post("/rooms")
-async def create_room(room: RoomCreate):
-    """Yeni oda ekler"""
-    new_room = {
-        "id": len(rooms_db) + 1,
-        **room.dict(),
-        "guest_name": None
-    }
-    rooms_db.append(new_room)
+async def create_room(room_data: dict, db: Session = Depends(get_db)):
+    # 1. Yeni oda nesnesi oluştur
+    new_room = Room(
+        room_number=room_data["room_number"],
+        room_type=room_data["room_type"],
+        price=room_data["price"],
+        current_status="Temiz"
+    )
+    # 2. VERİTABANINA KAYDET (KRİTİK ADIM)
+    db.add(new_room)
+    db.commit() # Bu satır veriyi kalıcı yapar
+    db.refresh(new_room)
     return new_room
 
-@app.post("/reservations/create")
-async def create_booking(data: dict):
-    """Rezervasyon oluşturur ve Finans'a haber verir"""
-    new_res_id = 101 + len(rooms_db)
-    
-    # GERÇEK ZAMANLI HABERLEŞME
-    event_data = {
-        "event": "RESERVATION_CREATED",
-        "reservation_id": new_res_id,
-        "guest_name": data.get("guest_name", "Bilinmiyor"),
-        "total_amount": data.get("amount", 0)
-    }
-    bus.publish("finance_events", event_data)
-    
-    return {"status": "Rezervasyon alındı, finans birimine iletildi.", "id": new_res_id}
-
-@app.get("/health")
-async def health():
-    return {"status": "up"}
+@app.get("/rooms")
+async def get_rooms(db: Session = Depends(get_db)):
+    return db.query(Room).all()

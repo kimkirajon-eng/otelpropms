@@ -4,8 +4,9 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 
-app = FastAPI()
+app = FastAPI(title="OtelPro API Gateway")
 
+# 1. CORS AYARI: Tarayıcı engellerini kaldırır
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -14,6 +15,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# 2. SERVİS ADRESLERİ: Render Environment Variables'dan çekilir
 SERVICES = {
     "auth": os.getenv("IDENTITY_SERVICE_URL", "").rstrip('/'),
     "res": os.getenv("RESERVATION_SERVICE_URL", "").rstrip('/'),
@@ -21,10 +23,15 @@ SERVICES = {
     "finance": os.getenv("FINANCE_SERVICE_URL", "").rstrip('/')
 }
 
+@app.get("/")
+async def root():
+    return {"status": "Gateway Live", "active_services": list(SERVICES.keys())}
+
+# 3. DİNAMİK PROXY: Veriyi bozmadan (Response) aktarır
 @app.api_route("/{service_name}/{rest_of_path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 async def proxy(service_name: str, rest_of_path: str, request: Request):
     if service_name not in SERVICES or not SERVICES[service_name]:
-        return Response(content='{"error": "Servis bulunamadi"}', status_code=404)
+        return Response(content='{"error": "Servis adresi eksik"}', status_code=404)
 
     target_url = f"{SERVICES[service_name]}/{rest_of_path}"
     body = await request.body()
@@ -37,13 +44,20 @@ async def proxy(service_name: str, rest_of_path: str, request: Request):
                 params=request.query_params,
                 content=body,
                 headers={k: v for k, v in request.headers.items() if k.lower() != "host"},
-                timeout=20.0
+                timeout=30.0
             )
-            # EN GARANTİ SATIR: Veriyi asla .json() yapma, direkt "binary" içeriği dön
+            # Kritik: Veriyi decode etmeden ham içerik (content) olarak dönüyoruz
             return Response(
-                content=response.content, 
-                status_code=response.status_code, 
+                content=response.content,
+                status_code=response.status_code,
                 media_type=response.headers.get("content-type")
             )
         except Exception as e:
-            return Response(content=f'{{"error": "{str(e)}"}}', status_code=500)
+            return Response(content=f'{{"error": "Baglanti Hatasi", "detail": "{str(e)}"}}', status_code=500)
+
+# 4. RENDER PORT AYARI: Bu kısım "Application exited early" hatasını çözer
+if __name__ == "__main__":
+    import uvicorn
+    # Render'ın atadığı PORT değişkenini oku, yoksa 10000 kullan
+    port = int(os.environ.get("PORT", 10000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
